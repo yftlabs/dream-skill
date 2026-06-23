@@ -20,7 +20,7 @@ SKILL_DIR="$HOME/.claude/skills/dream"
 if bash "$SKILL_DIR/should-dream.sh" 2>/dev/null; then
     # Conditions met - spawn dream in background
     # Use claude -p to run the dream skill non-interactively
-    nohup claude -p "Run the dream memory consolidation skill. Read ~/.claude/skills/dream/SKILL.md and execute all 4 phases for all projects." \
+    nohup claude --model haiku -p "Run the dream memory consolidation skill. Read ~/.claude/skills/dream/SKILL.md and execute all 4 phases for all projects." \
         --allowedTools "Read,Write,Edit,Bash,Glob,Grep" \
         > /tmp/dream-$(date +%Y%m%d-%H%M%S).log 2>&1 &
 

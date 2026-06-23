@@ -20,21 +20,27 @@ if [[ -f "$CONFIG" ]]; then
 fi
 
 # Find the .last-dream timestamp based on memory type
-LAST_DREAM_FILE=""
+LAST_DREAM=0
 case "$DREAM_MEMORY_TYPE" in
     native)
-        # Search all Claude Code project memory dirs for the most recent .last-dream
+        # Find the most recent .last-dream timestamp across all projects
+        NEWEST_TIMESTAMP=0
         for dir in "$HOME/.claude/projects/"*/memory/; do
             if [[ -f "$dir/.last-dream" ]]; then
-                LAST_DREAM_FILE="$dir/.last-dream"
-                break
+                TS=$(cat "$dir/.last-dream" 2>/dev/null || echo 0)
+                if [[ "$TS" =~ ^[0-9]+$ ]]; then
+                    if (( TS > NEWEST_TIMESTAMP )); then
+                        NEWEST_TIMESTAMP=$TS
+                    fi
+                fi
             fi
         done
         # If no .last-dream found anywhere, dream has never run - condition met
-        if [[ -z "$LAST_DREAM_FILE" ]]; then
+        if (( NEWEST_TIMESTAMP == 0 )); then
             echo "Dream conditions met: first-run (no .last-dream found)"
             exit 0
         fi
+        LAST_DREAM=$NEWEST_TIMESTAMP
         ;;
     openclaw|project-root)
         DREAM_MEMORY_PATH=$(grep '^DREAM_MEMORY_PATH=' "$CONFIG" | cut -d= -f2 || echo ".")
@@ -44,11 +50,9 @@ case "$DREAM_MEMORY_TYPE" in
             echo "Dream conditions met: first-run"
             exit 0
         fi
+        LAST_DREAM=$(cat "$LAST_DREAM_FILE")
         ;;
 esac
-
-# Check: 24+ hours since last consolidation
-LAST_DREAM=$(cat "$LAST_DREAM_FILE")
 NOW=$(date +%s)
 ELAPSED=$(( NOW - LAST_DREAM ))
 HOURS_ELAPSED=$(( ELAPSED / 3600 ))
