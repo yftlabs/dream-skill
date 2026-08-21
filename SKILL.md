@@ -241,7 +241,10 @@ After completing all 4 phases, write timestamps so the auto-trigger knows when y
 ```bash
 date +%s > ~/.claude/projects/<project>/memory/.last-dream
 rm -f ~/.claude/.dream-pending
+echo 0 > ~/.claude/skills/dream/.session-count
 ```
+
+The last line resets the session counter that `should-dream.sh` requires (5+ sessions) alongside the 24hr gate — otherwise the next auto-trigger check would immediately see the old count and could fire again too soon.
 
 ---
 
@@ -264,3 +267,29 @@ After running, verify the consolidation:
 3. Confirm no relative dates remain ("yesterday", "last week", etc.)
 4. Verify all topic files referenced in MEMORY.md actually exist
 5. Print a summary: entries added, entries updated, entries archived, contradictions resolved
+
+---
+
+## Phase 5: WRITE TO SHARED AGENT MEMORY
+
+**Goal:** Persist the consolidation summary to the shared pgvector store so all harnesses benefit.
+
+After Phase 4 completes, call `kb_add` with a structured summary:
+
+```
+title: "YYYY-MM-DD — dream consolidation"
+content: |
+  ## What was consolidated
+  - [list of key facts / decisions / corrections extracted from sessions]
+
+  ## Memory files updated
+  - [list of files changed and what changed]
+
+  ## Contradictions resolved
+  - [any conflicting facts that were updated]
+category: "session-memory"
+```
+
+This makes the dream output searchable across all harnesses. When agy or Codex start a session the next day, `kb_search("recent decisions")` will surface what was learned.
+
+**Compact summary only** — the full memory files are in `~/.claude/projects/*/memory/`. The kb_add content should be 5-10 bullet points, not a wall of text.

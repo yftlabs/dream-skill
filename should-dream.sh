@@ -61,5 +61,20 @@ if (( HOURS_ELAPSED < 24 )); then
     exit 1  # Too soon
 fi
 
-echo "Dream conditions met: ${HOURS_ELAPSED}h since last dream"
+# Also require 5+ sessions since last dream — 24h alone can fire on a quiet
+# day with nothing new to consolidate. Counter is incremented by
+# ~/.claude/hooks/dream-session-counter.sh (SessionStart hook) and reset to
+# 0 by the dream skill itself when a consolidation actually completes.
+SESSION_COUNT_FILE="$SKILL_DIR/.session-count"
+SESSION_COUNT=0
+if [[ -f "$SESSION_COUNT_FILE" ]]; then
+    SESSION_COUNT=$(cat "$SESSION_COUNT_FILE" 2>/dev/null || echo 0)
+    [[ "$SESSION_COUNT" =~ ^[0-9]+$ ]] || SESSION_COUNT=0
+fi
+
+if (( SESSION_COUNT < 5 )); then
+    exit 1  # Not enough new sessions yet
+fi
+
+echo "Dream conditions met: ${HOURS_ELAPSED}h and ${SESSION_COUNT} sessions since last dream"
 exit 0
